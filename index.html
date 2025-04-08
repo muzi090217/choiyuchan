@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>천체 시뮬레이션</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: white;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 10px;
+    }
+    label {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="space"></canvas>
+  <div id="controls">
+    <label>속도: <input type="range" id="speedControl" min="0.5" max="10" step="0.1" value="2"></label>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('space');
+    const ctx = canvas.getContext('2d');
+    const speedSlider = document.getElementById('speedControl');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let speed = 2;
+
+    class Body {
+      constructor(name, color, radius, orbitRadius, orbitSpeed, center, size = 10) {
+        this.name = name;
+        this.color = color;
+        this.orbitRadius = orbitRadius;
+        this.orbitSpeed = orbitSpeed;
+        this.center = center;
+        this.angle = Math.random() * Math.PI * 2;
+        this.size = size;
+      }
+
+      update() {
+        this.angle += this.orbitSpeed * speed * 0.01;
+      }
+
+      get position() {
+        const cx = this.center?.position?.x || centerX;
+        const cy = this.center?.position?.y || centerY;
+        return {
+          x: cx + this.orbitRadius * Math.cos(this.angle),
+          y: cy + this.orbitRadius * Math.sin(this.angle)
+        };
+      }
+
+      draw() {
+        const { x, y } = this.position;
+        ctx.beginPath();
+        ctx.arc(x, y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        // 궤도 표시
+        if (this.center) {
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+          ctx.arc(this.center.position.x, this.center.position.y, this.orbitRadius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      isClicked(x, y) {
+        const pos = this.position;
+        const dx = x - pos.x;
+        const dy = y - pos.y;
+        return Math.sqrt(dx * dx + dy * dy) < this.size + 5;
+      }
+    }
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    const sun = new Body("태양", "yellow", 30, 0, 0, null, 30);
+
+    // 행성들
+    const mercury = new Body("수성", "#aaa", 5, 60, 0.06, sun, 5);
+    const venus   = new Body("금성", "#e6c15c", 7, 90, 0.045, sun, 7);
+    const earth   = new Body("지구", "#2a75f3", 10, 130, 0.035, sun, 10);
+    const mars    = new Body("화성", "#c1440e", 8, 180, 0.028, sun, 8);
+    const jupiter = new Body("목성", "#d1b181", 14, 240, 0.020, sun, 14);
+    const saturn  = new Body("토성", "#e3c799", 12, 300, 0.015, sun, 12);
+    const uranus  = new Body("천왕성", "#a0e7e5", 10, 360, 0.012, sun, 10);
+    const neptune = new Body("해왕성", "#4f86f7", 10, 420, 0.010, sun, 10);
+
+    // 지구의 위성: 달
+    const moon = new Body("달", "#ccc", 3, 20, 0.1, earth, 3);
+
+    const bodies = [
+      sun,
+      mercury,
+      venus,
+      earth,
+      mars,
+      jupiter,
+      saturn,
+      uranus,
+      neptune,
+      moon
+    ];
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      bodies.forEach(body => {
+        body.update();
+        body.draw();
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      for (let body of bodies) {
+        if (body.isClicked(x, y)) {
+          alert(`${body.name}\n궤도 반지름: ${body.orbitRadius}px\n속도: ${body.orbitSpeed.toFixed(3)}`);
+          break;
+        }
+      }
+    });
+
+    speedSlider.addEventListener("input", (e) => {
+      speed = parseFloat(e.target.value);
+    });
+
+    draw();
+  </script>
+</body>
+</html>
+        
